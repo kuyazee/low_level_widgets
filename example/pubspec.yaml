@@ -1,0 +1,11 @@
+name: low_level_widgets_example
+publish_to: none
+environment:
+  sdk: ^3.5.0
+dependencies:
+  flutter:
+    sdk: flutter
+  low_level_widgets:
+    path: ..
+dev_dependencies:
+  flutter_lints: ^4.0.0

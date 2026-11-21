@@ -1,0 +1,15 @@
+name: low_level_widgets
+description: Compact Flutter layouts for common widget combinations.
+version: 0.1.0
+repository: https://github.com/kuyazee/low_level_widgets
+topics: [flutter, widgets, layout]
+environment:
+  sdk: ^3.5.0
+  flutter: '>=3.24.0'
+dependencies:
+  flutter:
+    sdk: flutter
+dev_dependencies:
+  flutter_lints: ^4.0.0
+  flutter_test:
+    sdk: flutter

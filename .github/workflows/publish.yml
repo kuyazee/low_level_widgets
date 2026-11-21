@@ -1,0 +1,56 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: pub.dev
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the tag and registry
+        id: registry
+        run: |
+          version="$(sed -n 's/^version: *//p' pubspec.yaml)"
+          [[ "$GITHUB_REF_NAME" == "v$version" ]] || { echo "Tag must match v$version"; exit 1; }
+          url=https://pub.dev/api/packages/low_level_widgets
+          code="$(curl -sSL --retry 3 -o "$RUNNER_TEMP/package.json" -w '%{http_code}' "$url")"
+          case "$code" in
+            200) ;;
+            404) echo "The first release needs a manual publish and pub.dev setup."; exit 1 ;;
+            *) echo "pub.dev returned HTTP $code"; exit 1 ;;
+          esac
+          published="$(jq -r --arg v "$version" 'any(.versions[]; .version == $v)' "$RUNNER_TEMP/package.json")"
+          echo "published=$published" >> "$GITHUB_OUTPUT"
+
+      - uses: dart-lang/setup-dart@2286a0c042b44434fe26d292bbce8d34f7ec662b # v1.8.2
+        if: steps.registry.outputs.published == 'false'
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        if: steps.registry.outputs.published == 'false'
+        with:
+          channel: stable
+          cache: true
+
+      - name: Publish the checked version
+        if: steps.registry.outputs.published == 'false'
+        run: |
+          flutter pub get
+          flutter pub publish --dry-run
+          flutter pub publish --force
